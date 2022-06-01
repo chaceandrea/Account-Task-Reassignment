@@ -1,30 +1,30 @@
 import json
 import pandas as pd
-from simple_salesforce import Salesforce, SalesforceLogin, SFType
+from simple_salesforce import Salesforce, SalesforceLogin
 
 
 def make_query(query):
     response = sf.query(query)
-    firstRecords = response.get('records')
-    nextRecordsUrl = response.get('nextRecordsUrl')
+    firstrecords = response.get('records')
+    nextrecordsurl = response.get('nextRecordsUrl')
 
     while not response.get('done'):
-        response = sf.query_more(nextRecordsUrl, identifier_is_url=True)
-        firstRecords.extend(response.get('records'))
-        nextRecordsUrl = response.get('nextRecordsUrl')
-    return firstRecords
+        response = sf.query_more(nextrecordsurl, identifier_is_url=True)
+        firstrecords.extend(response.get('records'))
+        nextrecordsurl = response.get('nextRecordsUrl')
+    return firstrecords
 
 
-def task_dataframe_format(firstRecords):
-    df_records = pd.DataFrame(firstRecords).drop(labels='attributes', axis=1)
+def task_dataframe_format(firstrecords):
+    df_records = pd.DataFrame(firstrecords).drop(labels='attributes', axis=1)
     ownernames = df_records['Owner'].apply(pd.Series).drop(labels='attributes', axis=1)
     accountnames = df_records['Account'].apply(pd.Series).drop(labels='attributes', axis=1)
     ids = df_records['Id'].apply(pd.Series)
     subject = df_records['Subject'].apply(pd.Series)
     what = df_records['What'].apply(pd.Series).drop(labels='attributes', axis=1)
-    taskDataframe = pd.concat([ownernames, accountnames, subject, ids, what], axis=1)
-    taskDataframe.columns = ['Task Owner', 'Account', 'Subject', 'ID', 'Related to']
-    return taskDataframe
+    taskdataframe = pd.concat([ownernames, accountnames, subject, ids, what], axis=1)
+    taskdataframe.columns = ['Task Owner', 'Account', 'Subject', 'ID', 'Related to']
+    return taskdataframe
 
 
 bulkAccountList = []
@@ -49,13 +49,17 @@ pd.set_option('expand_frame_repr', True)
 accountquery = "SELECT Id, Owner.Name, Name, RecordType.Name FROM Account WHERE OwnerId = '00541000006fXoQAAU' AND " \
                "(RecordType.Name = 'Honorary Alumni' OR RecordType.Name = 'Prospects' OR RecordType.Name = 'Alumni')"
 person1taskquery = "SELECT Id, Owner.Name, Account.Name, Subject, What.Type FROM Task WHERE Status = 'Open' and " \
-                   "Task.Account.OwnerId = '0052M000009Du88QAC' and What.Type = 'Alumni__c' and OwnerId != '0052M000009Du88QAC'"
+                   "Task.Account.OwnerId = '0052M000009Du88QAC' and What.Type = 'Alumni__c' and " \
+                   "OwnerId != '0052M000009Du88QAC'"
 person2taskquery = "SELECT Id, Owner.Name, Account.Name, Subject, What.Type FROM Task WHERE Status = 'Open' and " \
-                   "Task.Account.OwnerId = '0052M00000ARkFRQA1' and What.Type = 'Alumni__c' and OwnerId != '0052M00000ARkFRQA1'"
+                   "Task.Account.OwnerId = '0052M00000ARkFRQA1' and What.Type = 'Alumni__c' and " \
+                   "OwnerId != '0052M00000ARkFRQA1'"
 person3taskquery = "SELECT Id, Owner.Name, Account.Name, Subject, What.Type FROM Task WHERE Status = 'Open' and " \
-                   "Task.Account.OwnerId = '0052M000008lbosQAA' and What.Type = 'Alumni__c' and OwnerId != '0052M000008lbosQAA'"
+                   "Task.Account.OwnerId = '0052M000008lbosQAA' and What.Type = 'Alumni__c' and " \
+                   "OwnerId != '0052M000008lbosQAA'"
 person4taskquery = "SELECT Id, Owner.Name, Account.Name, Subject, What.Type FROM Task WHERE Status = 'Open' and " \
-                   "Task.Account.OwnerId = '0052M000009zW1TQAU' and What.Type = 'Alumni__c' and OwnerId != '0052M000009zW1TQAU'"
+                   "Task.Account.OwnerId = '0052M000009zW1TQAU' and What.Type = 'Alumni__c' and " \
+                   "OwnerId != '0052M000009zW1TQAU'"
 
 accountQueryResults = make_query(accountquery)
 
@@ -70,13 +74,13 @@ currentaccounts = accountnames.sample(frac=1).reset_index(drop=True)
 
 amountPerCoordinator = int(len(currentaccounts) / 4)
 
-## Create Coordinator Dataframes
-person1dataframe = currentaccounts.iloc[:(amountPerCoordinator)]
+# Create Coordinator Dataframes
+person1dataframe = currentaccounts.iloc[:amountPerCoordinator]
 person2dataframe = currentaccounts.iloc[amountPerCoordinator:(amountPerCoordinator * 2)]
 person3dataframe = currentaccounts.iloc[amountPerCoordinator * 2:(amountPerCoordinator * 3)]
 person4dataframe = currentaccounts.iloc[amountPerCoordinator * 3:(amountPerCoordinator * 4)]
 
-## If there is a remainder, add to person 2's dataframe
+# If there is a remainder, add to person 2's dataframe
 if len(currentaccounts) % 4 != 0:
     person2dataframe = person2dataframe.append(currentaccounts.iloc[-(len(currentaccounts) % 4):])
 
@@ -84,22 +88,22 @@ if len(currentaccounts) % 4 != 0:
 for row in person1dataframe.itertuples():
     dict = {'Id': f'{row[3]}', 'OwnerId': '0052M000009Du88QAC'}
     bulkAccountList.append(dict)
-    print("Account ID being assigned to Dan: " + row[3])
+    print("Account ID being assigned to person1: " + row[3])
 
 for row in person2dataframe.itertuples():
     dict = {'Id': f'{row[3]}', 'OwnerId': '0052M00000ARkFRQA1'}
     bulkAccountList.append(dict)
-    print("Account ID being assigned to Bre: " + row[3])
+    print("Account ID being assigned to person2: " + row[3])
 
 for row in person3dataframe.itertuples():
     dict = {'Id': f'{row[3]}', 'OwnerId': '0052M000008lbosQAA'}
     bulkAccountList.append(dict)
-    print("Account ID being assigned to Chace: " + row[3])
+    print("Account ID being assigned to person3: " + row[3])
 
 for row in person4dataframe.itertuples():
     dict = {'Id': f'{row[3]}', 'OwnerId': '0052M000009zW1TQAU'}
     bulkAccountList.append(dict)
-    print("Account ID being assigned to Zach: " + row[3])
+    print("Account ID being assigned to person4: " + row[3])
 
 # Send bulk account update through API
 bulkAccountUpdateResponse = sf.bulk.Account.update(bulkAccountList, batch_size=10000, use_serial=False)
@@ -116,7 +120,7 @@ person3tasks = task_dataframe_format(person3queryresults)
 person4queryresults = make_query(person4taskquery)
 person4tasks = task_dataframe_format(person4queryresults)
 
-## Create list of dicts for bulk update
+# Create list of dicts for bulk update
 for row in person1tasks.itertuples():
     dict = {'Id': f'{row[4]}', 'OwnerId': '0052M000009Du88QAC'}
     bulkTaskList.append(dict)
